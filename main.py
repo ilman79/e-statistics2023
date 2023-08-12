@@ -57,7 +57,7 @@ if selected == "Siswa":
     
     key_dict = json.loads(st.secrets["textkey"])
     creds = service_account.Credentials.from_service_account_info(key_dict)
-    db = firestore.Client(credentials=creads, project="e-statistics2023")
+    db = firestore.Client(credentials=creds, project="e-statistics2023")
     def get_db():
         db = firestore.Client(credentials=creds, project="e-statistics2023")
         return db 
