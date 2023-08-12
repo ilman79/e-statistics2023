@@ -330,7 +330,8 @@ if selected == "Guru" :
     key_dict = json.loads(st.secrets["textkey"])
     creds = service_account.Credentials.from_service_account_info(key_dict)
     db = firestore.Client(credentials=creds, project="e-statistics2023")
-    bucket = storage.bucket(app=storage.Client(credentials=creds), name="e-statistics2023.appspot.com")
+    storage_client = storage.Client(credentials=creds)
+    bucket = storage_client.bucket("e-statistics2023.appspot.com")
     def get_db():
         db = firestore.Client(credentials=creds, project="e-statistics2023")
         return db
