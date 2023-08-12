@@ -53,11 +53,17 @@ if selected == "Siswa":
     from google.cloud.firestore import Client
     from datetime import datetime, timedelta
     from google.oauth2 import service_account
+<<<<<<< HEAD
     import json
     
     key_dict = json.loads(st.secrets["textkey"])
     creds = service_account.Credentials.from_service_account_info(key_dict)
     db = firestore.Client(credentials=creads, project="e-statistics2023")
+=======
+    client = storage.Client.from_service_account_json("https://firebasestorage.googleapis.com/v0/b/test-json-qurey.appspot.com/o/key.json?alt=media&token=be7f7af6-1460-4e0f-9759-dc0d1f8d97c0")
+    bucket = client.bucket("e-statistics2023.appspot.com")
+
+>>>>>>> 4c1a0ef1ba3ebe798a75d295bb49d8b7e9099184
 
     def get_db():
         db = firestore.Client(credentials=creads, project="e-statistics2023")
