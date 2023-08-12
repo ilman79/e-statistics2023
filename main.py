@@ -8,7 +8,7 @@ import seaborn as sns
 import numpy as np
 from streamlit_option_menu import option_menu
 from PIL import Image
-import firebase_admin import credentials, storage
+from firebase_admin import credentials, storage
 from google.cloud import firestore, storage
 from google.cloud.firestore import Client
 from datetime import datetime, timedelta
