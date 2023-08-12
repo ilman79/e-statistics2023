@@ -39,7 +39,8 @@ selected = option_menu( menu_title=None, options=["Siswa", "Guru"],
                         }
                         )
 
-#------------Page siswa------------#if selected == "Siswa":    
+#------------Page siswa------------#
+if selected == "Siswa":    
     key_dict = json.loads(st.secrets["textkey"])
     creds = service_account.Credentials.from_service_account_info(key_dict)
     db = firestore.Client(credentials=creds, project="e-statistics2023")
