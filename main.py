@@ -39,24 +39,7 @@ selected = option_menu( menu_title=None, options=["Siswa", "Guru"],
                         }
                         )
 
-if selected == "Siswa":
-    import streamlit as st
-    import datetime
-    import time
-    import pandas as pd
-    from statistics import mean, mode, median
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    import numpy as np
-    from streamlit_option_menu import option_menu
-    from PIL import Image
-    import firebase_admin
-    from google.cloud import firestore, storage
-    from google.cloud.firestore import Client
-    from datetime import datetime, timedelta
-    from google.oauth2 import service_account
-    import json
-    
+if selected == "Siswa":    
     key_dict = json.loads(st.secrets["textkey"])
     creds = service_account.Credentials.from_service_account_info(key_dict)
     db = firestore.Client(credentials=creds, project="e-statistics2023")
@@ -344,7 +327,6 @@ if selected == "Siswa":
     if __name__ == "__main__":
         siswa()
 if selected == "Guru" :
-    import json
     key_dict = json.loads(st.secrets["textkey"])
     creds = service_account.Credentials.from_service_account_info(key_dict)
     db = firestore.Client(credentials=creds, project="e-statistics2023")
