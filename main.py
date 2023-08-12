@@ -686,13 +686,13 @@ if selected == "Guru" :
                     1. Tabel Baris dan Kolom \n
                     contohnya : \n
                     """)
-        st.image("assets/image_1.png", caption="Deskripsi Gambar", width=400)
+        st.image("assets/image_1.PNG", caption="Deskripsi Gambar", width=400)
         st.markdown(f""" 
                     2. Tabel Kontigensi \n
                     contohnya : \n
     
         """)
-        st.image("assets/image_1.png", caption="Deskripsi Gambar", width=400)
+        st.image("assets/image_1.PNG", caption="Deskripsi Gambar", width=400)
     
     
         st.markdown(
