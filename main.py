@@ -62,7 +62,7 @@ if selected == "Siswa":
     bucket = client.bucket("e-statistics2023.appspot.com")
 
     def get_db():
-        db = firestore.Client(credentials=creads, project="e-statistics2023")
+        db = firestore.Client(credentials=creds, project="e-statistics2023")
         return db 
     
     def home():
