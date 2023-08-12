@@ -1,0 +1,12 @@
+matplotlib==3.7.0
+pandas==2.0.3
+seaborn==0.12.2
+streamlit==1.25
+pip==23.2.1
+numpy==1.25.2
+streamlit_option_menu==0.3.6
+Pillow==8.4.0
+google-cloud-firestore==2.11.1
+google-cloud-storage==2.10.0
+firebase-admin==6.2.0
+google-auth==2.4.1
