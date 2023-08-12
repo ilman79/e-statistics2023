@@ -1,3 +1,4 @@
+#### Import module #######
 import streamlit as st
 import datetime
 import time
@@ -14,19 +15,18 @@ from google.cloud.firestore import Client
 from datetime import datetime, timedelta
 from google.oauth2 import service_account
 import json
+
+#-------------- main page-------------#
 st.set_page_config(
     page_title="Ex-stream-ly Cool App",
     page_icon="🧊",
     layout="centered",
     initial_sidebar_state="auto",
     menu_items={
-        'Get Help': 'https://www.extremelycoolapp.com/help',
-        'Report a bug': "https://www.extremelycoolapp.com/bug",
-        'About': "# This is a header. This is an *extremely* cool app!"
     }
 )
 
-# Menambahkan custom CSS ke tampilan Streamlit
+#-----------menu untuk pilihan---------#
 selected = option_menu( menu_title=None, options=["Siswa", "Guru"],
                         icons=["book", "people"],
                         menu_icon="cast",
@@ -39,10 +39,11 @@ selected = option_menu( menu_title=None, options=["Siswa", "Guru"],
                         }
                         )
 
-if selected == "Siswa":    
+#------------Page siswa------------#if selected == "Siswa":    
     key_dict = json.loads(st.secrets["textkey"])
     creds = service_account.Credentials.from_service_account_info(key_dict)
     db = firestore.Client(credentials=creds, project="e-statistics2023")
+
     def get_db():
         db = firestore.Client(credentials=creds, project="e-statistics2023")
         return db 
@@ -326,6 +327,8 @@ if selected == "Siswa":
     
     if __name__ == "__main__":
         siswa()
+
+#----------page guru--------#
 if selected == "Guru" :
     key_dict = json.loads(st.secrets["textkey"])
     creds = service_account.Credentials.from_service_account_info(key_dict)
