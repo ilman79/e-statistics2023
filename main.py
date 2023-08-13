@@ -44,7 +44,7 @@ if selected == "Siswa":
 
 
     def get_db():
-        db = firestore.Client.from_service_account_json("key.json")
+        db = firestore.Client(credentials=creds, project="e-statistics2023")
         return db
 
 
@@ -436,11 +436,8 @@ if selected == "Siswa":
 
 # ----------page guru--------#
 if selected == "Guru":
-
-    client = storage.Client.from_service_account_json("key.json")
-    bucket = client.get_bucket("e-statistics2023.appspot.com")
     def get_db():
-        db = firestore.Client.from_service_account_json("key.json")
+        db = firestore.Client(credentials=creds, project="e-statistics2023")
         return db
 
 
