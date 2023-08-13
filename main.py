@@ -36,6 +36,9 @@ selected = st.sidebar.selectbox(
     format_func=lambda option: f"📚 {option}" if option == "Siswa" else f"👩‍🏫 {option}",  # Adding icons
 )
 # ------------Page siswa------------#
+key_dict = json.loads(st.secrets["textkey"])
+creds = service_account.Credentials.from_service_account_info(key_dict)
+db = firestore.Client(credentials=creds, project="e-statistics2023")
 if selected == "Siswa":
     client = firestore.Client.from_service_account_json("key.json")
 
