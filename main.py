@@ -7,6 +7,7 @@ from statistics import mean, mode, median
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+import urllib.request
 from streamlit_option_menu import option_menu
 from PIL import Image
 from firebase_admin import credentials, storage
@@ -14,46 +15,41 @@ from google.cloud import firestore, storage
 from google.cloud.firestore import Client
 from datetime import datetime, timedelta
 from google.oauth2 import service_account
-import json
 
-#-------------- main page-------------#
+
+# -------------- main page-------------#
 st.set_page_config(
-    page_title="Ex-stream-ly Cool App",
-    page_icon="🧊",
+    page_title="e-statistics2023",
+    page_icon="📊",
     layout="centered",
     initial_sidebar_state="auto",
     menu_items={
     }
 )
 
-#-----------menu untuk pilihan---------#
-selected = option_menu( menu_title=None, options=["Siswa", "Guru"],
-                        icons=["book", "people"],
-                        menu_icon="cast",
-                        orientation = "horizontal",
-                        styles={
-                            "nav-link":{
-                                "margin":"0px",
-                                "align-items": "flex-start"
-                            }
-                        }
-                        )
 
-#------------Page siswa------------#
-if selected == "Siswa":    
-    key_dict = json.loads(st.secrets["textkey"])
-    creds = service_account.Credentials.from_service_account_info(key_dict)
-    db = firestore.Client(credentials=creds, project="e-statistics2023")
+# -----------menu untuk pilihan---------#
+selected = st.sidebar.selectbox(
+    label="",
+    options=["Siswa", "Guru"],
+    index=0,  # Default selected option index
+    format_func=lambda option: f"📚 {option}" if option == "Siswa" else f"👩‍🏫 {option}",  # Adding icons
+)
+# ------------Page siswa------------#
+if selected == "Siswa":
+    client = firestore.Client.from_service_account_json("key.json")
+
 
     def get_db():
-        db = firestore.Client(credentials=creds, project="e-statistics2023")
-        return db 
-    
+        db = firestore.Client.from_service_account_json("key.json")
+        return db
+
+
+
     def home():
-        st.title("Latihan")
         menu = ["Data Tunggal", "Data Kelompok"]
         milih = st.selectbox("Pilih data yang akan digunakan", menu)
-    
+
         if milih == "Data Tunggal":
             df = pd.DataFrame(
                 [
@@ -61,63 +57,134 @@ if selected == "Siswa":
                 ]
             )
             df["Nilai"] = pd.to_numeric(df["Nilai"], errors="coerce")  # Convert 'Nilai' column to numeric
-            edited_df = st.data_editor(df, num_rows="dynamic", key="data_editor",hide_index=True,height=280, width=400)
+            edited_df = st.data_editor(df, num_rows="dynamic", key="data_editor", hide_index=True, height=212,
+                                       width=400)
             end_button = st.button("Selesai")
             if end_button:
                 if not edited_df.empty and "Nilai" in edited_df.columns:
-                    ##### Menghitung mean
-                    calculated_mean = mean(edited_df["Nilai"])
-                    st.success(f"Mean Nilai: {calculated_mean:.2f}")
-                    expander = st.expander("See explanation")
-                    expander.write(
-                        "The chart above shows some numbers I picked for you. I rolled actual dice for these, so they're *guaranteed* to be random.")
-                    expander.image(
-                        "https://gurubelajarku.com/wp-content/uploads/2019/06/Statistika-Deskriptif-Pie-Chart.jpg",
-                        caption="Ilustrasi Statistika", use_column_width=True)
-    
-                    #### Menghitung modus
-                    calculated_mode = mode(edited_df["Nilai"])
-                    st.success(f"Mode Nilai: {calculated_mode:.2f}")
-                    expander = st.expander("See explanation")
-                    expander.write(
-                        "The chart above shows some numbers I picked for you. I rolled actual dice for these, so they're *guaranteed* to be random.")
-                    expander.image(
-                        "https://gurubelajarku.com/wp-content/uploads/2019/06/Statistika-Deskriptif-Pie-Chart.jpg",
-                        caption="Ilustrasi Statistika", use_column_width=True)
-    
-                    #### Menghitung Median
-                    calculated_median = median(edited_df["Nilai"])
-                    st.success(f"Mode Nilai: {calculated_median:.2f}")
-                    expander = st.expander("See explanation")
-                    expander.write(
-                        "The chart above shows some numbers I picked for you. I rolled actual dice for these, so they're *guaranteed* to be random.")
-                    expander.image(
-                        "https://gurubelajarku.com/wp-content/uploads/2019/06/Statistika-Deskriptif-Pie-Chart.jpg",
-                        caption="Ilustrasi Statistika", use_column_width=True)
-    
-                    calculated_std = np.std(edited_df["Nilai"])
-                    st.success(f"Mode Nilai: {calculated_std:.2f}")
-                    expander = st.expander("See explanation")
-                    expander.write(
-                        "The chart above shows some numbers I picked for you. I rolled actual dice for these, so they're *guaranteed* to be random.")
-                    expander.image(
-                        "https://gurubelajarku.com/wp-content/uploads/2019/06/Statistika-Deskriptif-Pie-Chart.jpg",
-                        caption="Ilustrasi Statistika", use_column_width=True)
-    
-                    calculated_std = np.std(edited_df["Nilai"])
-                    st.success(f"Mode Nilai: {calculated_std:.2f}")
-                    expander = st.expander("See explanation")
-                    expander.write(
-                        "The chart above shows some numbers I picked for you. I rolled actual dice for these, so they're *guaranteed* to be random.")
-                    expander.image(
-                        "https://gurubelajarku.com/wp-content/uploads/2019/06/Statistika-Deskriptif-Pie-Chart.jpg",
-                        caption="Ilustrasi Statistika", use_column_width=True)
-    
-                    st.write("Nilai Minimum:", np.min(edited_df["Nilai"]))
-                    st.write("Nilai Maksimum:", np.max(edited_df["Nilai"]))
-    
+                    # Calculate statistics
+                    with st.container():
+
+                        calculated_mean = edited_df["Nilai"].mean()
+                        st.write(calculated_mean,"Mean (Rata-rata): Nilai rata-rata dari seluruh data. Dihitung dengan menjumlahkan semua nilai dan kemudian membaginya dengan jumlah data.")
+                        st.latex(r"\text{Mean} = \frac{\sum_{i=1}^{n} x_i}{n}")
+
+                        #--------------------#
+                        calculated_mode = mode(edited_df["Nilai"])
+                        st.write(calculated_mode,"Mode (Modus): Nilai yang paling sering muncul dalam data.")
+                        st.latex(r"\text{Mode} = \text{Value(s) with the highest frequency}")
+
+                        # --------------------#
+                        calculated_median = edited_df["Nilai"].median()
+                        st.write(calculated_median, "Median (Median): Nilai tengah dalam urutan data yang telah diurutkan. Jika data memiliki jumlah ganjil, median adalah nilai tengah. Jika data memiliki jumlah genap, median adalah rata-rata dari dua nilai tengah.")
+                        st.latex(r"\text{Median} =\begin{cases} x_{\frac{n+1}{2}}, & \text{if } n \text{ is odd} \\ \frac{x_{\frac{n}{2}} + x_{\frac{n}{2}+1}}{2}, & \text{if } n \text{ is even} \end{cases}")
+
+                        # --------------------#
+                        calculated_std = np.std(edited_df["Nilai"])
+                        st.write(calculated_std, "Standard Deviation (Deviasi Standar): Ukuran seberapa jauh nilai-nilai dalam data tersebar dari rata-rata. Semakin besar deviasi standar, semakin besar variasi dalam data.")
+                        st.latex(r"\text{Standard Deviation} = \sqrt{\frac{\sum_{i=1}^{n} (x_i - \text{Mean})^2}{n}}")
+
+                        # --------------------#
+                        calculated_count = edited_df["Nilai"].count()
+                        st.write(calculated_count, "Count (Jumlah Data): Jumlah total data yang ada dalam dataset.")
+                        st.latex(r"\text{Count} = n")
+
+                        # --------------------#
+                        calculated_max = edited_df["Nilai"].max()
+                        st.write(calculated_max, "Maximum (Nilai Maksimum): Nilai tertinggi dalam dataset.")
+
+                        # --------------------#
+                        calculated_min = edited_df["Nilai"].min()
+                        st.write(calculated_min, "Minimum (Nilai Minimum): Nilai terendah dalam dataset.")
+
+                        # --------------------#
+                        calculated_q1 = edited_df["Nilai"].quantile(0.25)
+                        st.write(calculated_q1,"Q1 (Kuartil 1): Nilai yang membagi 25% data terbawah dari data yang telah diurutkan")
+                        st.latex(r"Q1 = x_{\frac{n+1}{4}}")
+
+                        # --------------------#
+                        calculated_q3 = edited_df["Nilai"].quantile(0.75)
+                        st.write(calculated_q3,"Q3 (Kuartil 3): Nilai yang membagi 75% data terbawah dari data yang telah diurutkan.")
+                        st.latex(r"Q3 = x_{\frac{3(n+1)}{4}}")
+
+                        # --------------------#
+                        calculated_iqr = calculated_q3 - calculated_q1
+                        st.write(calculated_iqr, "IQR (Interquartile Range): Rentang antara Q3 dan Q1, mengukur sebaran data dalam interval kuartil.")
+                        st.latex(r"\text{IQR} = Q3 - Q1")
+
+                        num_desils = 100
+
+                        def calculate_desile(Lk, f, fd, i):
+                            desile = Lk + ((f / fd) * i)
+                            return desile
+                        if num_desils:
+                            desile_results = []
+
+                            for k in range(1, num_desils + 1):
+                                Lk = edited_df["Nilai"].min() + (
+                                            (k / num_desils) * (edited_df["Nilai"].max() - edited_df["Nilai"].min()))
+                                f = edited_df[edited_df["Nilai"] <= Lk]["Nilai"].count()
+                                fd = edited_df["Nilai"].count()
+                                i = (edited_df["Nilai"].max() - edited_df["Nilai"].min()) / num_desils
+
+                                desile = calculate_desile(Lk, f, fd, i)
+                                desile_results.append(desile)
+
+                        desile_df = pd.DataFrame({
+                            'Desil': [f'Desil-{k}' for k in range(1, num_desils + 1)],
+                            'Nilai Desil': desile_results
+                        })
+                        st.write("Desil adalah suatu konsep dalam statistik yang digunakan untuk membagi data menjadi sepuluh bagian yang setiap bagian mewakili persentase tertentu dari total data. Dalam hal ini, desil pertama (D1) mewakili 10% data terbawah, desil kedua (D2) mewakili 20% data terbawah, dan seterusnya. Desil kesepuluh (D10) mewakili 100% data, yaitu keseluruhan data.")
+                        st.latex(r"Desil_k = L_k + \left( \frac{f \cdot i}{N} \right) \cdot w")
+
+                        st.write("Hasil Perhitungan Desil:")
+                        desile_df
+                        # Menghitung jumlah kelas dengan Sturges' Formula
+
+                        def calculate_num_classes(edited_df):
+                            n = len(edited_df)
+                            k = int(1 + np.log2(n))
+                            return k
+
+                        # Fungsi untuk menghitung distribusi frekuensi
+                        def calculate_frequency_distribution(edited_df, num_classes):
+                            freq_dist = pd.cut(edited_df, bins=num_classes, include_lowest=True)
+                            freq_table = pd.value_counts(freq_dist, sort=False).reset_index()
+                            freq_table.columns = ['Interval', 'Frekuensi']
+                            freq_table['Interval'] = freq_table['Interval'].astype(str)
+                            return freq_table
+                        num_classes = calculate_num_classes(edited_df)
+
+                        # Menghitung distribusi frekuensi
+                        freq_table = calculate_frequency_distribution(edited_df['Nilai'], num_classes)
+                        st.title("Distribusi Frekuensi")
+
+                        # Menampilkan informasi distribusi frekuensi
+                        st.write("Menentukan Jumlah Kelas (Sturges' Formula):", num_classes)
+                        st.latex(r'k = 1 + \log_2(n)')
+                        st.write("Tabel Distribusi Frekuensi:")
+                        st.write(freq_table)
+
+                        # Membuat histogram menggunakan Matplotlib
+                        plt.figure(figsize=(10, 6))
+                        plt.hist(edited_df['Nilai'], bins=num_classes, edgecolor='black', alpha=0.7)
+                        plt.xlabel("Interval")
+                        plt.ylabel("Frekuensi")
+                        plt.title("Histogram Distribusi Frekuensi")
+                        st.pyplot(plt)
+
+                        # Membuat ogive menggunakan Matplotlib
+                        cumulative_freq = np.cumsum(freq_table['Frekuensi'])
+                        plt.figure(figsize=(10, 6))
+                        plt.plot(freq_table['Interval'], cumulative_freq, marker='o', linestyle='-', color='orange')
+                        plt.xlabel("Interval")
+                        plt.ylabel("Frekuensi Kumulatif")
+                        plt.title("Ogive - Distribusi Kumulatif")
+                        plt.xticks(rotation=45)
+                        st.pyplot(plt)
                 else:
                     st.warning("Data kosong atau kolom 'Nilai' belum diisi.")
+
         elif milih == "Data Kelompok":
             df = pd.DataFrame(
                 [
@@ -125,82 +192,131 @@ if selected == "Siswa":
                 ]
             )
             df["Frekuensi"] = pd.to_numeric(df["Frekuensi"], errors="coerce")  # Convert 'Nilai' column to numeric
-    
-            edited_df = st.data_editor(df, num_rows="dynamic", key="data_editor", hide_index=True,height=280, width=400)
+
+            edited_df = st.data_editor(df, num_rows="dynamic", key="data_editor", hide_index=True, height=212,
+                                       width=400)
             end_button = st.button("Selesai")
             if end_button:
                 if not edited_df.empty and "Frekuensi" in edited_df.columns:
                     # Calculate statistics or any other processing you want
-                    st.write("Data yang telah diedit:")
-                    st.write(edited_df)
-    
-                    # Create a histogram using matplotlib
-                    with st.expander("Histogram Data Frekuensi"):
+                    with st.container():
+                        # Menghitung total frekuensi
+                        total_frekuensi = edited_df['Frekuensi'].sum()
+
+                        edited_df['Midpoint'] = [(int(interval.split('-')[0]) + int(interval.split('-')[1])) / 2 for interval in
+                                          edited_df['Interval']]
+                        frekuensi_kumulatif = np.cumsum(edited_df["Frekuensi"])
+                        df = edited_df
+                        df["Frekuensi Kumulatif"] = frekuensi_kumulatif
+                        st.write(df, hide_index=True)
+                        # Menghitung rata-rata tertimbang
+                        weighted_sum = sum([midpoint * freq for midpoint, freq in zip(edited_df['Midpoint'], edited_df['Frekuensi'])])
+                        weighted_mean = weighted_sum / total_frekuensi
+                        st.write(weighted_mean,"Rata-rata (Mean): Rata-rata dari suatu kelompok data kelompok dihitung dengan menjumlahkan seluruh nilai tengah (midpoint) dari interval dan membaginya dengan jumlah frekuensi total")
+
+                        # Menghitung median kelompok
+                        cumulative_freq = np.cumsum(edited_df['Frekuensi'])
+                        median_class_idx = cumulative_freq[cumulative_freq >= total_frekuensi / 2].idxmax()
+                        if median_class_idx == 0:
+                            grouped_median = edited_df['Midpoint'][0] + (
+                                    (total_frekuensi / 2 - cumulative_freq[0]) / edited_df['Frekuensi'][0]
+                            ) * (int(edited_df['Interval'][0].split('-')[1]) - int(edited_df['Interval'][0].split('-')[0]))
+                        else:
+                            grouped_median = edited_df['Midpoint'][median_class_idx] + (
+                                    (total_frekuensi / 2 - cumulative_freq[median_class_idx - 1]) /
+                                    edited_df['Frekuensi'][median_class_idx]
+                            ) * (int(edited_df['Interval'][median_class_idx].split('-')[1]) - int(
+                                edited_df['Interval'][median_class_idx].split('-')[0]))
+                        st.write(weighted_mean,"Median: Median kelompok adalah nilai yang terletak di tengah-tengah data yang telah diurutkan. Untuk menghitung median kelompok, Anda perlu mencari interval yang memiliki jumlah frekuensi kumulatif lebih besar dari setengah dari total frekuensi data. Lalu, gunakan formula yang telah dijelaskan sebelumnya untuk menghitung median pada interval tersebut.")
+                        # Menghitung modus kelompok
+                        index_of_mode_class = edited_df['Frekuensi'].idxmax()
+                        lower_bound_mode = int(edited_df['Interval'][index_of_mode_class].split('-')[0])
+                        interval_size = int(edited_df['Interval'][1].split('-')[0]) - int(edited_df['Interval'][0].split('-')[0])
+                        frequency_of_mode_class = edited_df['Frekuensi'][index_of_mode_class]
+                        frequency_of_prev_class = edited_df['Frekuensi'][index_of_mode_class - 1] if index_of_mode_class > 0 else 0
+                        frequency_of_next_class = edited_df['Frekuensi'][index_of_mode_class + 1] if index_of_mode_class < len(
+                            df) - 1 else 0
+                        grouped_mode = lower_bound_mode + ((frequency_of_mode_class - frequency_of_prev_class) / (
+                                    (frequency_of_mode_class - frequency_of_prev_class) + (
+                                        frequency_of_mode_class - frequency_of_next_class))) * interval_size
+                        st.write(grouped_mode,"Modus: Modus kelompok adalah nilai yang memiliki frekuensi tertinggi. Anda dapat menghitung modus dengan mencari interval dengan frekuensi tertinggi.")
+                        # Menghitung deviasi standar
+                        std_group = np.sqrt(sum(((edited_df['Midpoint'] - weighted_mean) ** 2) * edited_df['Frekuensi']) / total_frekuensi)
+                        st.write(std_group,"Deviasi Standar: Deviasi standar kelompok mengukur seberapa jauh nilai-nilai dalam data tersebar dari rata-rata. Rumus deviasi standar kelompok menggambarkan perbedaan antara nilai tengah setiap interval dan rata-rata dari data kelompok.")
+                        # Menghitung rentang interkuartil
+                        q1_index = cumulative_freq[cumulative_freq >= total_frekuensi * 0.25].index[0]
+                        q1_lower = int(edited_df['Interval'][q1_index].split('-')[0])
+                        q1_size = int(edited_df['Interval'][1].split('-')[0]) - int(edited_df['Interval'][0].split('-')[0])
+                        cumulative_freq_before_q1 = cumulative_freq[q1_index - 1] if q1_index > 0 else 0
+                        q1 = q1_lower + ((total_frekuensi * 0.25 - cumulative_freq_before_q1) / edited_df['Frekuensi'][
+                            q1_index]) * q1_size
+                        st.write(q1 ," Kuartil adalah nilai yang membagi data menjadi empat bagian yang sama besar. Q1 adalah nilai yang membagi 25% data terbawah dari data yang telah diurutkan")
+
+                        q3_index = cumulative_freq[cumulative_freq >= total_frekuensi * 0.75].index[0]
+                        q3_lower = int(edited_df['Interval'][q3_index].split('-')[0])
+                        q3_size = int(edited_df['Interval'][1].split('-')[0]) - int(edited_df['Interval'][0].split('-')[0])
+                        cumulative_freq_before_q3 = cumulative_freq[q3_index - 1] if q3_index > 0 else 0
+                        q3 = q3_lower + ((total_frekuensi * 0.75 - cumulative_freq_before_q3) / edited_df['Frekuensi'][
+                            q3_index]) * q3_size
+                        st.write(q3 ,"S edangkan Q3 membagi 75% data terbawah.")
+                        iqr = q3 - q1
+                        st.write(iqr, "Rentang Interkuartil (IQR): Rentang antara Q3 dan Q1 mengukur sebaran data dalam interval kuartil.")
+
+
+                        # Hitung total frekuensi
+                        total_frekuensi = sum(frekuensi_kumulatif)
+                        # Create a histogram using matplotlib
                         st.write(
-                            "The chart above shows some numbers I picked for you. I rolled actual dice for these, so they're *guaranteed* to be random.")
-                        st.image(
-                            "https://gurubelajarku.com/wp-content/uploads/2019/06/Statistika-Deskriptif-Pie-Chart.jpg",
-                            caption="Ilustrasi Statistika", use_column_width=True)
+                                "The chart above shows some numbers I picked for you. I rolled actual dice for these, so they're *guaranteed* to be random.")
+
                         plt.figure(figsize=(8, 6))
-                        plt.bar(edited_df['Kategori'], edited_df["Frekuensi"])
-                        plt.xlabel("Kategori")
+                        plt.bar(edited_df['Interval'], edited_df["Frekuensi"])
+                        plt.xlabel("Interval")
                         plt.ylabel("Frekuensi")
                         plt.title("Histogram Data Frekuensi")
                         st.pyplot(plt)
-                    # Create a bar chart using seaborn
-                    with st.expander("Bar Chart Data Frekuensi"):
-                        st.write(
-                            "The chart above shows some numbers I picked for you. I rolled actual dice for these, so they're *guaranteed* to be random.")
-                        st.image(
-                            "https://gurubelajarku.com/wp-content/uploads/2019/06/Statistika-Deskriptif-Pie-Chart.jpg",
-                            caption="Ilustrasi Statistika", use_column_width=True)
+
+                        # Create a line chart using matplotlib
                         plt.figure(figsize=(8, 6))
-                        sns.barplot(y="Kategori", x="Frekuensi", data=edited_df)
-                        plt.xlabel("Kategori")
-                        plt.ylabel("Frekuensi")
-                        plt.title("Bar Chart Data Frekuensi")
-                        st.pyplot(plt)
-    
-                    # Create a line chart using matplotlib
-                    with st.expander("Line Chart Data Frekuensi"):
-                        plt.figure(figsize=(8, 6))
-                        plt.plot(edited_df["Kategori"], edited_df["Frekuensi"], marker='o')
-                        plt.xlabel("Kategori")
+                        plt.plot(edited_df["Interval"], edited_df["Frekuensi"], marker='o')
+                        plt.xlabel("Interval")
                         plt.ylabel("Frekuensi")
                         plt.title("Line Chart Data Frekuensi")
                         plt.xticks(rotation=45)
                         st.pyplot(plt)
                         st.write(
-                            "The chart above shows some numbers I picked for you. I rolled actual dice for these, so they're *guaranteed* to be random.")
-                        st.image(
-                            "https://gurubelajarku.com/wp-content/uploads/2019/06/Statistika-Deskriptif-Pie-Chart.jpg",
-                            caption="Ilustrasi Statistika", use_column_width=True)
-    
-                    # Pie Chart
-                    with st.expander("Pie Chart Data Frekuensi"):
-                        labels = edited_df["Kategori"]
+                                "The chart above shows some numbers I picked for you. I rolled actual dice for these, so they're *guaranteed* to be random.")
+
+                        # Pie Chart
+                        labels = edited_df["Interval"]
                         sizes = edited_df["Frekuensi"]
                         plt.figure(figsize=(8, 8))
                         wedges, texts, autotexts = plt.pie(sizes, autopct='%1.1f%%', startangle=80,
-                                                           pctdistance=0.6)
+                                                               pctdistance=0.6)
                         plt.title("Pie Chart Data Frekuensi")
-    
+
                         # Create legend and place it below the pie chart
                         plt.legend(wedges, labels, title="Kategori", loc="center left", bbox_to_anchor=(1, 0, 0.5, 1))
                         st.pyplot(plt)
                         st.write(
-                            "The chart above shows some numbers I picked for you. I rolled actual dice for these, so they're *guaranteed* to be random.")
-                        st.image(
-                            "https://gurubelajarku.com/wp-content/uploads/2019/06/Statistika-Deskriptif-Pie-Chart.jpg",
-                            caption="Ilustrasi Statistika", use_column_width=True)
-    
-                    frekuensi_kumulatif = np.cumsum(edited_df["Frekuensi"])
-                    df = edited_df
-                    df["Frekuensi Kumulatif"] = frekuensi_kumulatif
-                    st.write(df)
-    
+                                "The chart above shows some numbers I picked for you. I rolled actual dice for these, so they're *guaranteed* to be random.")
+
+                        # Hitung proporsi frekuensi kumulatif
+                        cumulative_freq = np.cumsum(edited_df["Frekuensi"])
+                        plt.figure(figsize=(10, 6))
+                        plt.plot(edited_df["Interval"], cumulative_freq, marker='o', linestyle='-', color='orange')
+                        plt.xlabel("Interval")
+                        plt.ylabel("Frekuensi Kumulatif")
+                        plt.title("Ogive - Distribusi Kumulatif")
+                        # Tampilkan grid
+                        plt.grid(True)
+                        plt.xticks(rotation=45)
+                        st.pyplot(plt)
+
+
                 else:
                     st.warning("Data kosong atau kolom 'Nilai' belum diisi.")
+
     def post_nilai(db, nama_text, asal_sekolah_text, kelas_text, nilai, correct_answers, total_questions):
         payload = {
             "nama": nama_text,
@@ -213,154 +329,144 @@ if selected == "Siswa":
         doc_ref = db.collection("nilai").document()
         doc_ref.set(payload)
         return
-    
+
     def exam_ques():
-        st.title('Quiz')
-        st.write("Isi data terlebih dahulu")
-    
+        st.write("**Isi biodata terlebih dahulu**")
+
         db = get_db()
         questions_ref = db.collection("question")
         questions = questions_ref.get()
-    
+
         nama_text = st.text_input("Nama Lengkap", key="nama_input")
         asal_sekolah_text = st.text_input("Asal Sekolah", key="asal_sekolah_input")
         kelas_text = st.text_input("Kelas", key="kelas_input")
         st.write("------")
+
         question_data = []
         for question in questions:
-            question_data.append(question.to_dict())
-    
+            question_dict = question.to_dict()
+            question_dict["id"] = question.id  # Simpan ID dokumen dalam dictionary
+            question_data.append(question_dict)
+
         questions_and_answers = []
-    
         for idx, question in enumerate(question_data):
-            st.write(f"Pertanyaan {idx + 1}:", question["soal"])
-            st.image(question["foto_url"], caption=f"Foto Soal {idx + 1}", use_column_width=True)
-            key = f"radio_{idx}"  # Buat key yang unik berdasarkan indeks
-            selected_option = st.radio("Pilih Jawaban:", [question["option_A"], question["option_B"], question["option_C"],
-                                                          question["option_D"]], key=key)
-    
+            # Display image from Firebase Storage
+            st.write(f"**Pertanyaan soal {idx+1}:**", question["soal"])
+            key = f"radio_{idx + 1}"  # Buat key yang unik berdasarkan indekshttps
+            if question["foto_url"] is not None:
+                st.image(question["foto_url"], caption=f"Foto Soal {idx + 1}", use_column_width=True)
+            if question["tautan_url_mat"] =="":
+                st.write("")
+            else :
+                st.image(question["tautan_url_mat"], caption=f"Foto Soal {idx + 1}", use_column_width=True)
+            selected_option = st.radio("**Pilihlah Jawaban yang tepat** :",
+                                       [question["option_A"], question["option_B"], question["option_C"],
+                                        question["option_D"]], key=key)
+
+
             questions_and_answers.append((question, selected_option))
         total_questions = len(questions_and_answers)
         correct_answers = 0
         nilai = correct_answers / total_questions * 100
-    
+
         end_button = st.button("Selesai")
         if end_button:
-            db = get_db()
-            post_nilai(db, nama_text, asal_sekolah_text, kelas_text, nilai, correct_answers, total_questions)
-    
-    def lesson():
-        st.title("Statistika Pada Data Tunggal dan Kelompok")
-    
-        st.markdown(f"""
-                    Statistika adalah sebuah ilmu atau metode ilmiah yang mempelajari tentang bagaimana merencanakan, mengumpulkan,
-                    mengelola, menginterprestasi kemudian menganalisa data untuk kemudian mempresentasikan hasil data yang diperoleh.
-                    Sedangkan Menurut Kamus Besar Bahasa Indonesia (KBBI), statistik didefinisikan sebagai angka-angka atau catatan yang dikumpulkan, dikelompokkan
-                    dan ditabulasi sehingga didapatkan informasi berkaitan dengan masalah tertentu. \n
-    
-                    Data adalah himpunan keterangan atau bilangan dari objek yang diamati. Menurut jenisnya, data dibedakan menjadi: \n
-                    a. Data Kuantitatif adalah data yang dapat dinyatakan dengan bilangan. Menurut cara mendapatkan data kuantitatif dibagi 2 yaitu: \n
-                    ➢ Data Diskrit atau data Data Cacahan: data yang diperolah dengan cara mencacah atau menghitung satu per satu. \n
-                    Contoh : \n
-                    • Banyaknya wisatawan berkunjung ke bali di bulan ini 600 orang. \n
-                    • Satu kilogram telur berisi 16 butir. \n
-                    ➢ Data Kontinu atau Data Ukuran atau Data Timbangan: data yang diperoleh dengan cara mengukur atau menimbang dengan alat ukur yang valid. \n
-                    Contoh : \n
-                    • Berat badan 3 orang wisatawan adalah 45 kg, 50 kg, 53 kg. \n
-                    • Diameter pizza = 72,5 mm. \n
-    
-                    Data Kualitatif adalah data yang tidak dapat dinyatakan dengan bilangan (menyatakan mutu atau kualitas).\n
-                    Contoh :\n
-                    • Data jenis kelamin.\n
-                    • Data makanan kegemaran wisatawan.\n
-    
-                    Data yang baru dikumpulkan dan belum diolah disebut data mentah.\n
-                    Metode pengumpulan data ada 2 yaitu:\n
-                    1. Metode Sampling adalah pengumpulan data dengan meneliti sebagian anggota populasi.\n
-                    2. Metode Sensus adalah pengumpulan data dengan meneliti semua anggota populasi.\n
-                    Adapun cara untuk mengumpulkan data adalah:\n
-                    1. Wawancara (Interview).\n
-                    2. Angket (Kuesioner).\n
-                    3. Pengamatan (Observasi).\n
-                    4. Koleksi (data dari media cetak atau elektronik).\n
-                    5. Penyajian Data.\n
-    
-                    Bantuk Tabel atau daftar tabel \n
-                    Pada dasarnya ada 3 macam tabel yaitu \n
-                    1. Tabel Baris dan Kolom \n
-                    contohnya : \n
-                    """)
-        st.image("assets/image_1.PNG", caption="Deskripsi Gambar", width=400)
-        st.markdown(f""" 
-                    2. Tabel Kontigensi \n
-                    contohnya : \n
-    
-        """)
-        st.image("assets/image_1.PNG", caption="Deskripsi Gambar", width=400)
-        st.markdown(
-            """
-            ---\n
-            Referensi \n
-            [1] https://insanpelajar.com/statistik-dan-statistika/ \n
-            """
-        )
-    
+            if nama_text == "":
+                st.warning("Silahkan lengkapi biodata")
+            else :
+                db = get_db()
+                post_nilai(db, nama_text, asal_sekolah_text, kelas_text, nilai, correct_answers, total_questions)
+                st.success("Jawaban telah disimpan")
+
+
+    def view_lesson():
+        db = get_db()
+        leassons_ref = db.collection("postingan")
+        leassons = leassons_ref.get()
+
+        leasson_data = []
+        for leasson in leassons:
+            leasson_dict = leasson.to_dict()
+            leasson_dict["id"] = leasson.id  # Simpan ID dokumen dalam dictionary
+            leasson_data.append(leasson_dict)
+
+        for idx, leasson in enumerate(leasson_data):
+            # Display image from Firebase Storage
+            st.subheader(f'{idx + 1}. {leasson["judul"]}')
+            if leasson["foto_url"] is not None:
+                st.image(leasson["foto_url"], use_column_width=True)
+            if leasson["tautan_url"] is not None:
+                if "youtube.com" in leasson["tautan_url"] or "youtu.be" in leasson["tautan_url"]:
+                    st.video(leasson["tautan_url"], format="mp4", start_time=0)
+                else:
+                    st.image(leasson["tautan_url"], use_column_width=True)
+            if leasson["penjelasan"] == "":
+                st.write("")
+            else:
+                with st.expander("Penjelasan"):
+                    st.write(leasson["penjelasan"])
     def siswa():
         with st.sidebar:
             # Menambahkan logo perusahaan
-            st.image("https://github.com/dicodingacademy/assets/raw/main/logo.png")
+            st.image("https://raw.githubusercontent.com/ilman79/e-statistics2023/main/assets/logo.png")
             selected = option_menu(
-                menu_title="Main Menu",
+                menu_title=None,
                 options=["Materi", "Latihan", "Quiz"],
                 icons=["book", "calculator", "clipboard"],
                 menu_icon="cast",
                 styles={
-    
+                    "nav-link-selected": {"background-color": "#00BFFF"}
+
                 }
-    
+
             )
         if selected == "Quiz":
             exam_ques()
         elif selected == "Latihan":
             home()
         elif selected == "Materi":
-            lesson()
-    
+            view_lesson()
+
+
     if __name__ == "__main__":
         siswa()
 
-#----------page guru--------#
-if selected == "Guru" :
-    key_dict = json.loads(st.secrets["textkey"])
-    creds = service_account.Credentials.from_service_account_info(key_dict)
-    db = firestore.Client(credentials=creds, project="e-statistics2023")
-    storage_client = storage.Client(credentials=creds)
-    bucket = storage_client.bucket("e-statistics2023.appspot.com")
+# ----------page guru--------#
+if selected == "Guru":
+
+    client = storage.Client.from_service_account_json("key.json")
+    bucket = client.get_bucket("e-statistics2023.appspot.com")
     def get_db():
-        db = firestore.Client(credentials=creds, project="e-statistics2023")
+        db = firestore.Client.from_service_account_json("key.json")
         return db
+
+
     def create_question():
         with st.form(key="form"):
             st.subheader("Buat Soal Baru")
             uploaded_file = st.file_uploader("Pilih gambar", type=["jpg", "png", "jpeg"])
+            tautan_url_mat = st.text_input("Masukkan link tautan media:")
+
             question_text = st.text_area("Pertanyaan")
-    
+
             option_a = st.text_input("Pilihan A")
             option_b = st.text_input("Pilihan B")
             option_c = st.text_input("Pilihan C")
             option_d = st.text_input("Pilihan D")
-    
-            correct_option = st.radio("Jawaban Benar", [option_a, option_b, option_c, option_d])
-    
+
+            correct_option = st.selectbox("Jawaban Benar", ["Pilihan A", "Pilihan B", "Pilihan C", "Pilihan D"])
+
             if st.form_submit_button("Simpan Soal"):
                 db = get_db()
-                post_question(db, question_text, uploaded_file, option_a, option_b, option_c, option_d,
+                post_question(db, question_text,tautan_url_mat, uploaded_file, option_a, option_b, option_c, option_d,
                               correct_option)
-    
-    
-    def post_question(db, question_text, uploaded_file, option_a, option_b, option_c, option_d, correct_option):
+                st.success("Soal berhasil ditambahkan!")
+                st.experimental_rerun()
+
+    def post_question(db, question_text, tautan_url_mat, uploaded_file, option_a, option_b, option_c, option_d, correct_option):
         payload = {
             "soal": question_text,
+            "tautan_url_mat":tautan_url_mat,
             "foto_url": None,
             "option_A": option_a,
             "option_B": option_b,
@@ -372,378 +478,200 @@ if selected == "Guru" :
             # Upload gambar ke Firebase Storage dan dapatkan URL
             # Mengunggah gambar ke Firebase Storage dan dapatkan URL
             blob = bucket.blob("soal/" + uploaded_file.name)
-    
+
             # Menggunakan BytesIO untuk membaca data gambar
             image_data = uploaded_file.read()
-    
+
             # Mengunggah data gambar ke Firebase Storage
             blob.upload_from_string(image_data, content_type=uploaded_file.type)
             expiration_time = datetime.utcnow() + timedelta(days=3650)  # 10 tahun * 365 hari/tahun
             image_url_with_token = blob.generate_signed_url(expiration=expiration_time)  # URL dengan token akses
-    
+
             payload["foto_url"] = image_url_with_token
+        if tautan_url_mat is not None:
+            # Upload gambar ke Firebase Storage dan dapatkan URL
+            # Mengunggah gambar ke Firebase Storage dan dapatkan URL
+
+            # Menggupload link
+            payload["tautan_url_mat"] = tautan_url_mat
         doc_ref = db.collection("question").document()
         doc_ref.set(payload)
         return
-        with st.form(key="form"):
-            st.subheader("Buat Soal Baru")
-            uploaded_file = st.file_uploader("Pilih gambar", type=["jpg", "png", "jpeg"])
-            question_text = st.text_area("Pertanyaan")
-    
-            option_a = st.text_input("Pilihan A")
-            option_b = st.text_input("Pilihan B")
-            option_c = st.text_input("Pilihan C")
-            option_d = st.text_input("Pilihan D")
-    
-            correct_option = st.radio("Jawaban Benar", [option_a, option_b, option_c, option_d])
-    
-            if st.form_submit_button("Simpan Soal"):
-                db = get_db()
-                post_question(db, question_text, uploaded_file, option_a, option_b, option_c, option_d,
-                              correct_option)
-    
-    
-    def home():
-        st.title("Latihan")
-        menu = ["Data Tunggal", "Data Kelompok"]
-        milih = st.selectbox("Pilih data yang akan digunakan", menu)
-    
-        if milih == "Data Tunggal":
-            df = pd.DataFrame(
-                [
-                    {"Nilai": ""}
-                ]
-            )
-            df["Nilai"] = pd.to_numeric(df["Nilai"], errors="coerce")  # Convert 'Nilai' column to numeric
-            edited_df = st.data_editor(df, num_rows="dynamic", key="data_editor", hide_index=True,height=280, width=400)
-            end_button = st.button("Selesai")
-            if end_button:
-                if not edited_df.empty and "Nilai" in edited_df.columns:
-                    ##### Menghitung mean
-                    calculated_mean = mean(edited_df["Nilai"])
-                    st.success(f"Mean Nilai: {calculated_mean:.2f}")
-                    expander = st.expander("See explanation")
-                    expander.write(
-                        "The chart above shows some numbers I picked for you. I rolled actual dice for these, so they're *guaranteed* to be random.")
-                    expander.image(
-                        "https://gurubelajarku.com/wp-content/uploads/2019/06/Statistika-Deskriptif-Pie-Chart.jpg",
-                        caption="Ilustrasi Statistika", use_column_width=True)
-    
-                    #### Menghitung modus
-                    calculated_mode = mode(edited_df["Nilai"])
-                    st.success(f"Mode Nilai: {calculated_mode:.2f}")
-                    expander = st.expander("See explanation")
-                    expander.write(
-                        "The chart above shows some numbers I picked for you. I rolled actual dice for these, so they're *guaranteed* to be random.")
-                    expander.image(
-                        "https://gurubelajarku.com/wp-content/uploads/2019/06/Statistika-Deskriptif-Pie-Chart.jpg",
-                        caption="Ilustrasi Statistika", use_column_width=True)
-    
-                    #### Menghitung Median
-                    calculated_median = median(edited_df["Nilai"])
-                    st.success(f"Mode Nilai: {calculated_median:.2f}")
-                    expander = st.expander("See explanation")
-                    expander.write(
-                        "The chart above shows some numbers I picked for you. I rolled actual dice for these, so they're *guaranteed* to be random.")
-                    expander.image(
-                        "https://gurubelajarku.com/wp-content/uploads/2019/06/Statistika-Deskriptif-Pie-Chart.jpg",
-                        caption="Ilustrasi Statistika", use_column_width=True)
-    
-                    calculated_std = np.std(edited_df["Nilai"])
-                    st.success(f"Mode Nilai: {calculated_std:.2f}")
-                    expander = st.expander("See explanation")
-                    expander.write(
-                        "The chart above shows some numbers I picked for you. I rolled actual dice for these, so they're *guaranteed* to be random.")
-                    expander.image(
-                        "https://gurubelajarku.com/wp-content/uploads/2019/06/Statistika-Deskriptif-Pie-Chart.jpg",
-                        caption="Ilustrasi Statistika", use_column_width=True)
-    
-                    calculated_std = np.std(edited_df["Nilai"])
-                    st.success(f"Mode Nilai: {calculated_std:.2f}")
-                    expander = st.expander("See explanation")
-                    expander.write(
-                        "The chart above shows some numbers I picked for you. I rolled actual dice for these, so they're *guaranteed* to be random.")
-                    expander.image(
-                        "https://gurubelajarku.com/wp-content/uploads/2019/06/Statistika-Deskriptif-Pie-Chart.jpg",
-                        caption="Ilustrasi Statistika", use_column_width=True)
-    
-                    st.write("Nilai Minimum:", np.min(edited_df["Nilai"]))
-                    st.write("Nilai Maksimum:", np.max(edited_df["Nilai"]))
-    
-                else:
-                    st.warning("Data kosong atau kolom 'Nilai' belum diisi.")
-        elif milih == "Data Kelompok":
-            df = pd.DataFrame(
-                [
-                    {"Interval": "", "Frekuensi": ""}
-                ]
-            )
-            df["Frekuensi"] = pd.to_numeric(df["Frekuensi"], errors="coerce")  # Convert 'Nilai' column to numeric
-            edited_df = st.data_editor(df, num_rows="dynamic", key="data_editor", hide_index=True,height=280, width=400)
-            end_button = st.button("Selesai")
-            if end_button:
-                if not edited_df.empty and "Frekuensi" in edited_df.columns:
-                    # Calculate statistics or any other processing you want
-                    st.write("Data yang telah diedit:")
-                    st.write(edited_df)
-    
-                    # Create a histogram using matplotlib
-                    with st.expander("Histogram Data Frekuensi"):
-                        st.write(
-                            "The chart above shows some numbers I picked for you. I rolled actual dice for these, so they're *guaranteed* to be random.")
-                        st.image(
-                            "https://gurubelajarku.com/wp-content/uploads/2019/06/Statistika-Deskriptif-Pie-Chart.jpg",
-                            caption="Ilustrasi Statistika", use_column_width=True)
-                        plt.figure(figsize=(8, 6))
-                        plt.bar(edited_df['Kategori'], edited_df["Frekuensi"])
-                        plt.xlabel("Kategori")
-                        plt.ylabel("Frekuensi")
-                        plt.title("Histogram Data Frekuensi")
-                        st.pyplot(plt)
-                    # Create a bar chart using seaborn
-                    with st.expander("Bar Chart Data Frekuensi"):
-                        st.write(
-                            "The chart above shows some numbers I picked for you. I rolled actual dice for these, so they're *guaranteed* to be random.")
-                        st.image(
-                            "https://gurubelajarku.com/wp-content/uploads/2019/06/Statistika-Deskriptif-Pie-Chart.jpg",
-                            caption="Ilustrasi Statistika", use_column_width=True)
-                        plt.figure(figsize=(8, 6))
-                        sns.barplot(y="Kategori", x="Frekuensi", data=edited_df)
-                        plt.xlabel("Kategori")
-                        plt.ylabel("Frekuensi")
-                        plt.title("Bar Chart Data Frekuensi")
-                        st.pyplot(plt)
-    
-                    # Create a line chart using matplotlib
-                    with st.expander("Line Chart Data Frekuensi"):
-                        plt.figure(figsize=(8, 6))
-                        plt.plot(edited_df["Kategori"], edited_df["Frekuensi"], marker='o')
-                        plt.xlabel("Kategori")
-                        plt.ylabel("Frekuensi")
-                        plt.title("Line Chart Data Frekuensi")
-                        plt.xticks(rotation=45)
-                        st.pyplot(plt)
-                        st.write(
-                            "The chart above shows some numbers I picked for you. I rolled actual dice for these, so they're *guaranteed* to be random.")
-                        st.image(
-                            "https://gurubelajarku.com/wp-content/uploads/2019/06/Statistika-Deskriptif-Pie-Chart.jpg",
-                            caption="Ilustrasi Statistika", use_column_width=True)
-    
-                    # Pie Chart
-                    with st.expander("Pie Chart Data Frekuensi"):
-                        labels = edited_df["Kategori"]
-                        sizes = edited_df["Frekuensi"]
-                        plt.figure(figsize=(8, 8))
-                        wedges, texts, autotexts = plt.pie(sizes, autopct='%1.1f%%', startangle=80,
-                                                           pctdistance=0.6)
-                        plt.title("Pie Chart Data Frekuensi")
-    
-                        # Create legend and place it below the pie chart
-                        plt.legend(wedges, labels, title="Kategori", loc="center left", bbox_to_anchor=(1, 0, 0.5, 1))
-                        st.pyplot(plt)
-                        st.write(
-                            "The chart above shows some numbers I picked for you. I rolled actual dice for these, so they're *guaranteed* to be random.")
-                        st.image(
-                            "https://gurubelajarku.com/wp-content/uploads/2019/06/Statistika-Deskriptif-Pie-Chart.jpg",
-                            caption="Ilustrasi Statistika", use_column_width=True)
-    
-                    frekuensi_kumulatif = np.cumsum(edited_df["Frekuensi"])
-                    df = edited_df
-                    df["Frekuensi Kumulatif"] = frekuensi_kumulatif
-                    st.write(df)
-    
-                else:
-                    st.warning("Data kosong atau kolom 'Nilai' belum diisi.")
-    
-    
     def view_questions():
-        st.title("Daftar Soal")
         db = get_db()
         questions_ref = db.collection("question")
         questions = questions_ref.get()
-    
+
         question_data = []
         for question in questions:
             question_dict = question.to_dict()
             question_dict["id"] = question.id  # Simpan ID dokumen dalam dictionary
             question_data.append(question_dict)
-    
+
         for idx, question in enumerate(question_data):
-            key = f"radio_{idx + 1}"  # Buat key yang unik berdasarkan indeks
             # Display image from Firebase Storage
-            st.write("Pertanyaan:", question["soal"])
-            key = f"radio_{idx}"  # Buat key yang unik berdasarkan indekshttps
-            st.image(question["foto_url"], caption=f"Foto Soal {idx + 1}", use_column_width=True)
-            selected_option = st.radio("Pilih Jawaban:", [question["option_A"], question["option_B"], question["option_C"],
-                                                          question["option_D"]], key=key)
-    
+
+            key = f"radio_{idx+ 1}"  # Buat key yang unik berdasarkan indekshttps
+            if question["foto_url"] is not None:
+                st.image(question["foto_url"], caption=f"Foto Soal {idx + 1}", use_column_width=True)
+            if question["tautan_url_mat"] == "":
+                st.write("")
+            else:
+                st.image(question["tautan_url_mat"], caption=f"Foto Soal {idx + 1}", use_column_width=True)
+            st.write(f"**Pertanyaan soal {idx + 1}:**", question["soal"])
+            selected_option = st.radio("Pilih Jawaban:",
+                                       [question["option_A"], question["option_B"], question["option_C"],
+                                        question["option_D"]], key=key)
+
             if st.button(f"Hapus Soal {idx + 1}"):
                 # Hapus pertanyaan dari Firebase Firestore berdasarkan ID dokumen
                 question_ref = db.collection("question").document(question["id"])
                 question_ref.delete()
                 st.success("Soal berhasil dihapus!")
-    
-    
-    def exam_ques():
-        st.title('Quiz')
-    
-        db = get_db()
-        questions_ref = db.collection("question")
-        questions = questions_ref.get()
-    
-        question_data = []
-        for question in questions:
-            question_data.append(question.to_dict())
-    
-        questions_and_answers = []
-    
-        for idx, question in enumerate(question_data):
-            st.write("Pertanyaan:", question["soal"])
-            st.image(question["foto_url"], caption=f"Foto Soal {idx + 1}", use_column_width=True)
-            key = f"radio_{idx}"  # Buat key yang unik berdasarkan indeks
-            selected_option = st.radio("Pilih Jawaban:", [question["option_A"], question["option_B"], question["option_C"],
-                                                          question["option_D"]], key=key)
-    
-            questions_and_answers.append((question, selected_option))
-    
-        end_button = st.button("Selesai")
-        if end_button:
-            st.title("Hasil Ujian")
-            for idx, (question, selected_option) in enumerate(questions_and_answers):
-                if selected_option == question["jawaban"]:
-                    st.write(f"Pertanyaan: {idx + 1}")
-                    st.success("Benar")
-                else:
-                    st.error("Salah")
-                    st.write("Jawaban yang Benar:", question["jawaban"])
-    
-    
-    def post_materi(db, materi_text, foto_file):
+                st.experimental_rerun()
+
+
+    def create_lesson():
+        with st.form(key="form"):
+            st.subheader("Buat Materi Baru")
+            judul_text = st.text_input("Judul Materi :")
+            foto_file = st.file_uploader("Upload Foto", type=["jpg", "png", "jpeg"])
+            tautan_url = st.text_input("Masukkan link tautan media:")
+            penjelasan_text = st.text_area("Penjelasan yang akan anda sampaikan berupa text :")
+
+            if st.form_submit_button("Simpan Materi"):
+                db = get_db()
+                post_materi(db, judul_text, foto_file,tautan_url, penjelasan_text)
+                st.success("Berhasil menambahkan materi")
+                st.experimental_rerun()
+
+
+    def post_materi(db, judul_text, foto_file,tautan_url, penjelasan_text):
         payload = {
-            "soal": materi_text,
+            "judul": judul_text,
             "foto_url": None,
+            "tautan_url" : None,
+            "penjelasan" : penjelasan_text
         }
-        if uploaded_file is not None:
+        if foto_file is not None:
             # Upload gambar ke Firebase Storage dan dapatkan URL
             # Mengunggah gambar ke Firebase Storage dan dapatkan URL
-            blob = bucket.blob("uploads/" + uploaded_file.name)
-    
+            blob = bucket.blob("materi/" + foto_file.name)
+
             # Menggunakan BytesIO untuk membaca data gambar
-            image_data = uploaded_file.read()
-    
+            image_data = foto_file.read()
+
             # Mengunggah data gambar ke Firebase Storage
             blob.upload_from_string(image_data, content_type=uploaded_file.type)
             expiration_time = datetime.utcnow() + timedelta(days=3650)  # 10 tahun * 365 hari/tahun
             image_url_with_token = blob.generate_signed_url(expiration=expiration_time)  # URL dengan token akses
-    
+
             payload["foto_url"] = image_url_with_token
+        if tautan_url is not None:
+            # Upload gambar ke Firebase Storage dan dapatkan URL
+            # Mengunggah gambar ke Firebase Storage dan dapatkan URL
+
+            # Menggupload link
+            payload["tautan_url"] = tautan_url
         doc_ref = db.collection("postingan").document()
         doc_ref.set(payload)
         return
-        with st.form(key="form"):
-            st.subheader("Buat Soal Baru")
-            uploaded_file = st.file_uploader("Pilih gambar", type=["jpg", "png", "jpeg"])
-            question_text = st.text_area("Pertanyaan")
-    
-            if st.form_submit_button("Simpan Soal"):
-                db = get_db()
-                post_materi(db, materi_text, foto_file)
-    
-    
-    def lesson():
-        st.title("Statistika Pada Data Tunggal dan Kelompok")
-        st.markdown(f"""
-                    Statistika adalah sebuah ilmu atau metode ilmiah yang mempelajari tentang bagaimana merencanakan, mengumpulkan,
-                    mengelola, menginterprestasi kemudian menganalisa data untuk kemudian mempresentasikan hasil data yang diperoleh.
-                    Sedangkan Menurut Kamus Besar Bahasa Indonesia (KBBI), statistik didefinisikan sebagai angka-angka atau catatan yang dikumpulkan, dikelompokkan
-                    dan ditabulasi sehingga didapatkan informasi berkaitan dengan masalah tertentu. \n
-    
-                    Data adalah himpunan keterangan atau bilangan dari objek yang diamati. Menurut jenisnya, data dibedakan menjadi: \n
-                    a. Data Kuantitatif adalah data yang dapat dinyatakan dengan bilangan. Menurut cara mendapatkan data kuantitatif dibagi 2 yaitu: \n
-                    ➢ Data Diskrit atau data Data Cacahan: data yang diperolah dengan cara mencacah atau menghitung satu per satu. \n
-                    Contoh : \n
-                    • Banyaknya wisatawan berkunjung ke bali di bulan ini 600 orang. \n
-                    • Satu kilogram telur berisi 16 butir. \n
-                    ➢ Data Kontinu atau Data Ukuran atau Data Timbangan: data yang diperoleh dengan cara mengukur atau menimbang dengan alat ukur yang valid. \n
-                    Contoh : \n
-                    • Berat badan 3 orang wisatawan adalah 45 kg, 50 kg, 53 kg. \n
-                    • Diameter pizza = 72,5 mm. \n
-    
-                    Data Kualitatif adalah data yang tidak dapat dinyatakan dengan bilangan (menyatakan mutu atau kualitas).\n
-                    Contoh :\n
-                    • Data jenis kelamin.\n
-                    • Data makanan kegemaran wisatawan.\n
-    
-                    Data yang baru dikumpulkan dan belum diolah disebut data mentah.\n
-                    Metode pengumpulan data ada 2 yaitu:\n
-                    1. Metode Sampling adalah pengumpulan data dengan meneliti sebagian anggota populasi.\n
-                    2. Metode Sensus adalah pengumpulan data dengan meneliti semua anggota populasi.\n
-                    Adapun cara untuk mengumpulkan data adalah:\n
-                    1. Wawancara (Interview).\n
-                    2. Angket (Kuesioner).\n
-                    3. Pengamatan (Observasi).\n
-                    4. Koleksi (data dari media cetak atau elektronik).\n
-                    5. Penyajian Data.\n
-    
-                    Bantuk Tabel atau daftar tabel \n
-                    Pada dasarnya ada 3 macam tabel yaitu \n
-                    1. Tabel Baris dan Kolom \n
-                    contohnya : \n
-                    """)
-        st.image("assets/image_1.PNG", caption="Deskripsi Gambar", width=400)
-        st.markdown(f""" 
-                    2. Tabel Kontigensi \n
-                    contohnya : \n
-    
-        """)
-        st.image("assets/image_1.PNG", caption="Deskripsi Gambar", width=400)
-    
-    
-        st.markdown(
-            """
-            ---\n
-            Referensi \n
-            [1] https://insanpelajar.com/statistik-dan-statistika/ \n
-            """
-        )
-    
+    def view_lesson():
+        db = get_db()
+        leassons_ref = db.collection("postingan")
+        leassons = leassons_ref.get()
+
+        leasson_data = []
+        for leasson in leassons:
+            leasson_dict = leasson.to_dict()
+            leasson_dict["id"] = leasson.id  # Simpan ID dokumen dalam dictionary
+            leasson_data.append(leasson_dict)
+
+        for idx, leasson in enumerate(leasson_data):
+            # Display image from Firebase Storage
+            st.subheader(f'{idx+1}. {leasson["judul"]}')
+            if leasson["foto_url"] is not None:
+                st.image(leasson["foto_url"], use_column_width=True)
+            if leasson["tautan_url"] is not None:
+                if "youtube.com" in leasson["tautan_url"] or "youtu.be" in leasson["tautan_url"]:
+                    st.video(leasson["tautan_url"], format="mp4", start_time=0)
+                else:
+                    st.image(leasson["tautan_url"], use_column_width=True)
+            with st.expander("Penjelasan"):
+                st.write(leasson["penjelasan"])
+            if st.button(f"Hapus Soal {idx + 1}"):
+                # Hapus pertanyaan dari Firebase Firestore berdasarkan ID dokumen
+                leasson_ref = db.collection("postingan").document(leasson["id"])
+                leasson_ref.delete()
+                st.success("Soal berhasil dihapus!")
+                st.experimental_rerun()
+
+
     def report():
-        st.title("Daftar Nilai")
+        st.subheader("Daftar Nilai")
         db = get_db()
         documents_ref = db.collection("nilai")
         documents = documents_ref.stream()
-    
+
         documents_databases = []
         for doc in documents:
             data = doc.to_dict()
+            data["id"] = doc.id  # Simpan ID dokumen dalam dictionary
             documents_databases.append(data)
-    
-        # Membuat DataFrame dari data
+
         df = pd.DataFrame(documents_databases)
-        # Tampilkan tabel menggunakan Streamlit
-        st.write("Tabel Data dari Firebase Firestore:")
-        st.dataframe(df,hide_index=True,width=1000,  height=350)
-        csv = df.to_csv().encode('utf-8')
-    
+
+        # Display the DataFrame
+        st.write("Report hasil pengerjaan siswa:")
+        st.dataframe(df, width=1000, height=350)
+
+        # Checkbox to select rows for deletion
+        if not df.empty:
+            selected_rows = st.multiselect("Pilih baris untuk dihapus", df["nama"])
+
+            # Delete selected rows from Firestore
+            if st.button("hapus data"):
+                for idx in df.index:
+                    if df.loc[idx, "nama"] in selected_rows:
+                        doc_id = documents_databases[idx]["id"]
+                        doc_ref = db.collection("nilai").document(doc_id)
+                        doc_ref.delete()
+                st.success("Data berhasil dihapus!")
+                st.experimental_rerun()
+
+        st.write("-----")
+        csv = df.to_csv(index=False).encode('utf-8')
         st.download_button(
             label="Download Report",
             data=csv,
             file_name='report.csv',
             mime='text/csv',
         )
-    
-    
+
+
+
     def login_page():
+        with st.sidebar:
+            st.image("https://raw.githubusercontent.com/ilman79/e-statistics2023/main/assets/logo.png")
+            st.subheader("Hubungi Kami")
+            st.write("Jika Anda memiliki pertanyaan, saran, atau masukan, jangan ragu untuk menghubungi kami:")
+            st.write(" :mailbox: : info@e-statistics.com")
+            st.markdown(" :phone: : 08089080980980")
+            st.write(" :computer: : www.linkedin.com/company/e-statistics")
+
+        st.subheader("Selamat Datang, silahkan login terlebih dahulu")
+        st.write("-----")
         username = st.text_input("Username:")
         password = st.text_input("Password: ", type="password")
-    
+
         if st.button("Login"):
+
             if authenticate_user(username, password):
                 st.success("Login successful!")
                 st.session_state.logged_in = True
+                st.experimental_rerun()
                 guru()
-    
-    
+
             else:
                 st.error("Invalid username or password.")
         st.write("-----")
@@ -758,71 +686,73 @@ if selected == "Guru" :
             <input type="hidden" name="_template" value="table">
             <input type="hidden" name="_autoresponse" value="Terima kasih sudah menghubungi e-statistik, untuk akses username : admin dan password : admin">
             <button type="submit">Send</button>
-            
+
         </form>
-        
+
             """
+
             def local_css(file_name):
-                with open(file_name) as f :
-                    st.markdown(f"<style>{f.read()}</style>",unsafe_allow_html=True)
+                with open(file_name) as f:
+                    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
             local_css("style.css")
             st.markdown(contact_form, unsafe_allow_html=True)
-    
+
+
     def logout():
         # Reset session state to indicate logout
         st.session_state.logged_in = False
         st.success("Logged out successfully!")
-    
-    
+
+
     def authenticate_user(username, password):
         db = get_db()
         admin_ref = db.collection("admin")
         admin_docs = admin_ref.stream()
-    
+
         for admin_doc in admin_docs:
             admin_data = admin_doc.to_dict()
             if admin_data["username"] == username and admin_data["passward"] == password:
                 return True
-    
+
         return False
-    
-    
+
+
     def guru():
         if "logged_in" not in st.session_state:
             st.session_state.logged_in = False
         if st.session_state.logged_in:
             with st.sidebar:
-                # Menambahkan logo perusahaan
-                st.image("https://github.com/dicodingacademy/assets/raw/main/logo.png")
+                st.image("https://raw.githubusercontent.com/ilman79/e-statistics2023/main/assets/logo.png")
                 selected = option_menu(
-                    menu_title="Main Menu",
-                    options=["Materi", "Latihan", "Quiz", "Tambah Soal", "Daftar Soal", "Nilai Siswa"],
-                    icons=["book", "calculator","pen", "clipboard","list","key"],
+                    menu_title=None,
+                    options=["Daftar Materi","Edit Materi", "Tambah Soal", "Daftar Soal", "Nilai Siswa", "Keluar Halaman" ],
+                    icons=["book", "pen", "clipboard", "list", "key","window"],
                     menu_icon="cast",
                     styles={
-    
+                        "nav-link-selected": {"background-color": "#00BFFF"}
+
                     }
-    
+
                 )
+
+
             if selected == "Tambah Soal":
                 create_question()
-            elif selected == "Quiz":
-                exam_ques()
-            elif selected == "Latihan":
-                home()
-            elif selected == "Materi":
-                lesson()
+            elif selected == "Daftar Materi":
+                view_lesson()
             elif selected == "Daftar Soal":
                 view_questions()
             elif selected == "Nilai Siswa":
                 report()
-    
-    
-            # Display logout button below the page content
-            st.button("Logout", on_click=logout)
+            elif selected == "Edit Materi":
+                create_lesson()
+            elif selected == "Keluar Halaman":
+                logout()
+                st.experimental_rerun()
         else:
             login_page()
-    
+
+
     if __name__ == "__main__":
         guru()
-    
