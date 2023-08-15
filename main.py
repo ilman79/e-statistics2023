@@ -597,10 +597,10 @@ if selected == "Guru":
             if leasson["tautan_url"] is not None:
                 if "youtube.com" in leasson["tautan_url"] or "youtu.be" in leasson["tautan_url"]:
                     st.video(leasson["tautan_url"], format="mp4", start_time=0)
-            elif leasson["tautan_url"] =="":
-                    st.write("")
-            else :
+                else :
                     st.image(leasson["tautan_url"], use_column_width=True)
+            elif leasson["tautan_url"] == "":
+                    st.write("")
             with st.expander("Penjelasan"):
                 st.write(leasson["penjelasan"])
             if st.button(f"Hapus Materi {idx + 1}"):
