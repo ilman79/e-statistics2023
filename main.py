@@ -598,7 +598,7 @@ if selected == "Guru":
                     st.image(leasson["tautan_url"], use_column_width=True)
             with st.expander("Penjelasan"):
                 st.write(leasson["penjelasan"])
-            if st.button(f"Hapus Soal {idx + 1}"):
+            if st.button(f"Hapus Materi {idx + 1}"):
                 # Hapus pertanyaan dari Firebase Firestore berdasarkan ID dokumen
                 leasson_ref = db.collection("postingan").document(leasson["id"])
                 leasson_ref.delete()
