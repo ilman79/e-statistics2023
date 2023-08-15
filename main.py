@@ -651,7 +651,7 @@ if selected == "Guru":
 
     def login_page():
         with st.sidebar:
-            st.image("https://raw.githubusercontent.com/ilman79/e-statistics2023/main/assets/logo.png")
+            st.image("https://raw.githubusercontent.com/ilman79/e-statistics2023/main/assets/logo_2.png")
             st.subheader("Hubungi Kami")
             st.write("Jika Anda memiliki pertanyaan, saran, atau masukan, jangan ragu untuk menghubungi kami:")
             st.write(" :mailbox: : info@e-statistics.com")
@@ -722,7 +722,7 @@ if selected == "Guru":
             st.session_state.logged_in = False
         if st.session_state.logged_in:
             with st.sidebar:
-                st.image("https://raw.githubusercontent.com/ilman79/e-statistics2023/main/assets/logo.png")
+                st.image("https://raw.githubusercontent.com/ilman79/e-statistics2023/main/assets/logo_2.png")
                 selected = option_menu(
                     menu_title=None,
                     options=["Daftar Materi","Edit Materi", "Tambah Soal", "Daftar Soal", "Nilai Siswa", "Keluar Halaman" ],
