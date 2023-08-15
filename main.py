@@ -397,7 +397,7 @@ if selected == "Siswa":
             st.subheader(f'{idx + 1}. {leasson["judul"]}')
             if leasson["foto_url"] is not None:
                 st.image(leasson["foto_url"], use_column_width=True)
-             if leasson["tautan_url"] != "":
+            if leasson["tautan_url"] != "":
                 if "youtube.com" in leasson["tautan_url"] or "youtu.be" in leasson["tautan_url"]:
                     st.video(leasson["tautan_url"], format="mp4", start_time=0)
                 else :
