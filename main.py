@@ -400,10 +400,11 @@ if selected == "Siswa":
             if leasson["tautan_url"] is not None:
                 if "youtube.com" in leasson["tautan_url"] or "youtu.be" in leasson["tautan_url"]:
                     st.video(leasson["tautan_url"], format="mp4", start_time=0)
+                else :
+                    st.image(leasson["tautan_url"], use_column_width=True)
+
             elif leasson["tautan_url"] == "":
                     st.write("")
-            elif :
-                    st.image(leasson["tautan_url"], use_column_width=True)
             if leasson["penjelasan"] == "":
                 st.write("")
             else:
